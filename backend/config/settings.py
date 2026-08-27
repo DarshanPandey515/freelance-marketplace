@@ -1,5 +1,8 @@
+from datetime import timedelta
 from pathlib import Path
 import os
+
+import dj_database_url
 from dotenv import load_dotenv
 
 
@@ -8,13 +11,28 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def env_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in ("1", "true", "yes", "on")
+
+
+def env_list(name, default=None):
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default if default is not None else []
+    return [item.strip() for item in value.split(",") if item.strip()]
+
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 
-DEBUG = True
+DEBUG = env_bool("DEBUG", False)
 
-ALLOWED_HOSTS = ["*"]
-
+ALLOWED_HOSTS = env_list(
+    "ALLOWED_HOSTS",
+    ["localhost", "127.0.0.1", ".vercel.app"],
+)
 
 
 INSTALLED_APPS = [
@@ -28,7 +46,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'drf_spectacular',
     'marketplace'
-    
+
 ]
 
 MIDDLEWARE = [
@@ -62,14 +80,13 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
-
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -88,7 +105,6 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
@@ -98,26 +114,26 @@ USE_I18N = True
 USE_TZ = True
 
 
-
 STATIC_URL = 'static/'
 
 
-
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
-
+# Security
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", False)
+CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", False)
+SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
 
 
+CORS_ALLOWED_ORIGINS = env_list(
+    "CORS_ALLOWED_ORIGINS",
+    [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://freelance-marketplace-super30.vercel.app",
+    ],
+)
 
-CORS_ALLOW_ALL_ORIGINS = True
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173"
-]
+CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", False)
 
 
 CORS_ALLOW_METHODS = (
@@ -148,8 +164,6 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
 }
 
-
-from datetime import timedelta
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
