@@ -1,4 +1,5 @@
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+export const API_BASE =
+  import.meta.env.VITE_API_URL || 'https://freelance-marketplace-super30-api.vercel.app/api'
 
 export function getToken() {
   return localStorage.getItem('access_token')
